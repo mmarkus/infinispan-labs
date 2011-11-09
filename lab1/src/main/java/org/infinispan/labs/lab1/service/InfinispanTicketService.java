@@ -24,6 +24,7 @@ package org.infinispan.labs.lab1.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -57,7 +58,7 @@ public class InfinispanTicketService implements TicketService {
    }
 
    public void allocateTicket(String allocatedTo, String event) {
-      tickets.put(allocatedTo + "-" + event, new TicketAllocation(allocatedTo, event));
+      tickets.put(allocatedTo + "-" + event, new TicketAllocation(allocatedTo, event), 10, TimeUnit.SECONDS);
    }
 
    public List<TicketAllocation> getAllocatedTickets() {
