@@ -23,17 +23,13 @@
 package org.infinispan.labs.lab1.service;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Alternative;
 import javax.inject.Inject;
 import javax.inject.Named;
 
+import org.infinispan.Cache;
 import org.infinispan.labs.lab1.TicketPopulator;
 import org.infinispan.labs.lab1.model.TicketAllocation;
 
@@ -50,10 +46,10 @@ import org.infinispan.labs.lab1.model.TicketAllocation;
  */
 @Named
 @ApplicationScoped
-@Alternative
-public class SimpleTicketService implements TicketService {
+public class InfinispanTicketService implements TicketService {
 
-   private final List<TicketAllocation> tickets = new ArrayList<TicketAllocation>();
+   @Inject
+   private Cache<String, TicketAllocation> tickets;
 
    @Inject
    public void populate(TicketPopulator populator) {
@@ -61,19 +57,15 @@ public class SimpleTicketService implements TicketService {
    }
 
    public void allocateTicket(String allocatedTo, String event) {
-      tickets.add(new TicketAllocation(allocatedTo, event));
+      tickets.put(allocatedTo + "-" + event, new TicketAllocation(allocatedTo, event));
    }
 
    public List<TicketAllocation> getAllocatedTickets() {
-      return tickets;
+      return new ArrayList<TicketAllocation>(tickets.values());
    }
    
    public void clearAllocations() {
       tickets.clear();
-   }
-   
-   public void bookTicket(String id) {
-      throw new UnsupportedOperationException();
    }
 
 }
