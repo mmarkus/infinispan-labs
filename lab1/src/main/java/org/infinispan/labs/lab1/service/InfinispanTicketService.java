@@ -26,11 +26,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.New;
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.jms.Connection;
+import javax.jms.ConnectionFactory;
+import javax.jms.JMSException;
+import javax.jms.MessageProducer;
+import javax.jms.Queue;
+import javax.jms.Session;
+import javax.jms.TextMessage;
 
 import org.infinispan.Cache;
 import org.infinispan.labs.lab1.TicketPopulator;
@@ -58,14 +65,36 @@ public class InfinispanTicketService implements TicketService {
    public void populate(TicketPopulator populator) {
       populator.populate();
    }
-   
+
+   @Resource(mappedName="/ConnectionFactory")
+   private ConnectionFactory cf;
+
+   @Resource(mappedName = "queue/test")
+   private Queue queue;
+
    @Inject
    public void registerAbuseListener(@New AbuseListener abuseListener) {
       tickets.addListener(abuseListener);
    }
 
    public void allocateTicket(String allocatedTo, String event) {
-      tickets.put(allocatedTo + "-" + event, new TicketAllocation(allocatedTo, event), 10, TimeUnit.SECONDS);
+      TicketAllocation allocation = new TicketAllocation(allocatedTo, event);
+      tickets.put(allocation.getId(), allocation, 10, TimeUnit.SECONDS);
+   }
+
+   public void bookTicket(String id) {
+      try {
+         Connection connection = cf.createConnection();
+         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+         MessageProducer publisher = session.createProducer(queue);
+         connection.start();
+         TextMessage message = session.createTextMessage("Book ticket for " + id);
+         publisher.send(message);
+         connection.close();
+         session.close();
+      } catch (JMSException e) {
+         throw new RuntimeException(e);
+      }
    }
 
    public List<TicketAllocation> getAllocatedTickets() {
