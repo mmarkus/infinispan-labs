@@ -38,6 +38,12 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
+import javax.transaction.HeuristicMixedException;
+import javax.transaction.HeuristicRollbackException;
+import javax.transaction.NotSupportedException;
+import javax.transaction.RollbackException;
+import javax.transaction.SystemException;
+import javax.transaction.UserTransaction;
 
 import org.infinispan.Cache;
 import org.infinispan.labs.lab1.TicketPopulator;
@@ -71,6 +77,10 @@ public class InfinispanTicketService implements TicketService {
 
    @Resource(mappedName = "queue/test")
    private Queue queue;
+   
+   @Inject 
+   UserTransaction utx;
+   
 
    @Inject
    public void registerAbuseListener(@New AbuseListener abuseListener) {
@@ -84,6 +94,7 @@ public class InfinispanTicketService implements TicketService {
 
    public void bookTicket(String id) {
       try {
+         utx.begin();
          Connection connection = cf.createConnection();
          Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
          MessageProducer publisher = session.createProducer(queue);
@@ -92,7 +103,22 @@ public class InfinispanTicketService implements TicketService {
          publisher.send(message);
          connection.close();
          session.close();
+         utx.commit();
       } catch (JMSException e) {
+         throw new RuntimeException(e);
+      } catch (NotSupportedException e) {
+         throw new RuntimeException(e);
+      } catch (SystemException e) {
+         throw new RuntimeException(e);
+      } catch (SecurityException e) {
+         throw new RuntimeException(e);
+      } catch (IllegalStateException e) {
+         throw new RuntimeException(e);
+      } catch (RollbackException e) {
+         throw new RuntimeException(e);
+      } catch (HeuristicMixedException e) {
+         throw new RuntimeException(e);
+      } catch (HeuristicRollbackException e) {
          throw new RuntimeException(e);
       }
    }
