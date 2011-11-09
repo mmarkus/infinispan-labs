@@ -35,4 +35,8 @@ public class TicketAllocation {
       this.event = eventName;
    }
 
+   public String getId() {
+      return allocatedTo + "-" + event;
+   }
+   
 }

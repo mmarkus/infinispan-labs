@@ -7,12 +7,11 @@ import org.infinispan.labs.lab1.model.TicketAllocation;
 
 public interface TicketService {
    
-   public List<TicketAllocation> getTicketsAllocated(String event);
-   
-   public Set<String> getEvents();
+   public List<TicketAllocation> getAllocatedTickets();
 
    public void allocateTicket(String allocatedTo, String event);
 
    public void clearAllocations();
 
+   public void bookTicket(String id);
 }

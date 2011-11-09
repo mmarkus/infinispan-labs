@@ -47,7 +47,7 @@
       </div>
 
       <div id="content">
-         <h:form prependId="false">
+         <h:form id="allocate">
             <h2><h:outputText value="Name"/></h2>
             <h:messages id="nameErrors" errorClass="error"/>
             <h:inputText id="name" value="#{viewController.name}" label="Name" required="true"/>
@@ -55,11 +55,12 @@
             <h:messages id="eventErrors" errorClass="error"/>
             <h:inputText id="event" value="#{viewController.eventName}" label="Event" required="true"/>
             <h:commandButton value="Allocate" action="#{viewController.allocate}">
-               <f:ajax execute="name event" render="nameErrors eventErrors numberOfAllocations allocatedTickets"/>
+               <f:ajax execute="name event" render="nameErrors eventErrors :tickets:numberOfAllocations :tickets:allocatedTickets"/>
             </h:commandButton>
             <br/>
             <br/>            
-
+         </h:form>
+         <h:form id="tickets">
             <h2>
                <h:outputText id="numberOfAllocations" value="Number Of Allocations - #{numberOfAllocatedTickets}"/>
                <h:commandButton value="Refresh">
@@ -69,7 +70,6 @@
                   <f:ajax immediate="true" render="numberOfAllocations allocatedTickets"/>
                </h:commandButton>
             </h2>
-            
             <h:dataTable id="allocatedTickets" value="#{allocatedTickets}" var="t">
                <h:column>
                   <f:facet name="header">
@@ -82,6 +82,12 @@
                      Allocated To
                   </f:facet>
                   <h:outputText value="#{t.allocatedTo}"/>
+               </h:column>
+               <h:column>
+                  <f:facet name="header">
+                     
+                  </f:facet>
+                  <h:commandButton value="Book" action="#{viewController.book(t.id)}" />
                </h:column>
             </h:dataTable>
          

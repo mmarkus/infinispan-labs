@@ -23,7 +23,6 @@
 package org.infinispan.labs.lab1.view;
 
 
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.enterprise.context.RequestScoped;
@@ -51,13 +50,7 @@ public class ViewController {
    
    @Produces @Named
    public List<TicketAllocation> getAllocatedTickets() {
-      List<TicketAllocation> result = new ArrayList<TicketAllocation>();
-      for (String event : service.getEvents()) {
-         for (TicketAllocation ticket : service.getTicketsAllocated(event)) {
-            result.add(ticket);
-         }
-      }
-      return result;
+      return service.getAllocatedTickets();
    }
    
    @Produces @Named
@@ -65,6 +58,9 @@ public class ViewController {
       return getAllocatedTickets().size();
    }
    
+   public void book(String id) {
+      service.bookTicket(id);
+   }
    
    public void allocate() {
       service.allocateTicket(name, eventName);
