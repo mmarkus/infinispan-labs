@@ -26,7 +26,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.New;
 import javax.inject.Inject;
 import javax.inject.Named;
 
@@ -55,6 +57,11 @@ public class InfinispanTicketService implements TicketService {
    @Inject
    public void populate(TicketPopulator populator) {
       populator.populate();
+   }
+   
+   @Inject
+   public void registerAbuseListener(@New AbuseListener abuseListener) {
+      tickets.addListener(abuseListener);
    }
 
    public void allocateTicket(String allocatedTo, String event) {
