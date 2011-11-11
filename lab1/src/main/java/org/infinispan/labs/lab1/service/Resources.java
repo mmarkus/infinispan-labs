@@ -1,18 +1,17 @@
 package org.infinispan.labs.lab1.service;
 
-import java.util.logging.Logger;
-
-import javax.enterprise.inject.Produces;
-import javax.enterprise.inject.spi.InjectionPoint;
-
 import org.infinispan.cdi.ConfigureCache;
 import org.infinispan.cdi.OverrideDefault;
 import org.infinispan.config.Configuration;
 import org.infinispan.config.Configuration.CacheMode;
 import org.infinispan.config.GlobalConfiguration;
+import org.infinispan.labs.lab1.transactions.JBoss7TransactionManagerLookup;
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.manager.EmbeddedCacheManager;
 
+import javax.enterprise.inject.Produces;
+import javax.enterprise.inject.spi.InjectionPoint;
+import java.util.logging.Logger;
 /**
  * Cache definitions
  *
@@ -22,19 +21,17 @@ public class Resources {
 
    /**
     * <p>This producer defines the ticket allocation cache configuration.</p>
-    * 
     */
    @TicketAllocationCache
    @ConfigureCache("ticket-allocation-cache")
    @Produces
    public Configuration configureCache() {
       return new Configuration().fluent()
-            .clustering()
-               .mode(CacheMode.DIST_SYNC)
-               .l1()
-                  
-            .jmxStatistics()
-            .build();
+         .mode(CacheMode.DIST_SYNC)
+         .l1()
+         .transaction().transactionManagerLookup(new JBoss7TransactionManagerLookup())
+         .jmxStatistics()
+         .build();
    }
    
    @Produces @OverrideDefault

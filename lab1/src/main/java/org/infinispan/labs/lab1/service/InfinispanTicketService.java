@@ -25,26 +25,21 @@ package org.infinispan.labs.lab1.service;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Resource;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.New;
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.jms.Connection;
-import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
 import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
-import javax.transaction.HeuristicMixedException;
-import javax.transaction.HeuristicRollbackException;
-import javax.transaction.NotSupportedException;
-import javax.transaction.RollbackException;
-import javax.transaction.SystemException;
-import javax.transaction.UserTransaction;
+import javax.jms.XAConnection;
+import javax.jms.XAConnectionFactory;
+import javax.jms.XASession;
+import javax.transaction.TransactionManager;
 
 import org.infinispan.Cache;
 import org.infinispan.config.Configuration.CacheMode;
@@ -74,16 +69,15 @@ public class InfinispanTicketService implements TicketService {
       populator.populate();
    }
 
-   @Resource(mappedName="/ConnectionFactory")
-   private ConnectionFactory cf;
+   @Resource(mappedName="/JmsXA")
+   private XAConnectionFactory cf;
+
+   @Resource(mappedName = "java:jboss/TransactionManager")
+   private TransactionManager tm;
 
    @Resource(mappedName = "queue/test")
    private Queue queue;
    
-   @Inject 
-   private UserTransaction utx;
-   
-
    @Inject
    public void registerAbuseListener(@New AbuseListener abuseListener) {
       tickets.addListener(abuseListener);
@@ -96,31 +90,32 @@ public class InfinispanTicketService implements TicketService {
 
    public void bookTicket(String id) {
       try {
-         utx.begin();
-         Connection connection = cf.createConnection();
-         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-         MessageProducer publisher = session.createProducer(queue);
-         connection.start();
-         TextMessage message = session.createTextMessage("Book ticket for " + id);
-         publisher.send(message);
-         connection.close();
-         session.close();
-         utx.commit();
-      } catch (JMSException e) {
-         throw new RuntimeException(e);
-      } catch (NotSupportedException e) {
-         throw new RuntimeException(e);
-      } catch (SystemException e) {
-         throw new RuntimeException(e);
-      } catch (SecurityException e) {
-         throw new RuntimeException(e);
-      } catch (IllegalStateException e) {
-         throw new RuntimeException(e);
-      } catch (RollbackException e) {
-         throw new RuntimeException(e);
-      } catch (HeuristicMixedException e) {
-         throw new RuntimeException(e);
-      } catch (HeuristicRollbackException e) {
+         XAConnection connection = null;
+         try {
+            connection = cf.createXAConnection();
+            connection.start();
+
+            XASession xaSession = connection.createXASession();
+
+            Session session = xaSession.getSession();
+            MessageProducer publisher = session.createProducer(queue);
+
+            TextMessage message = session.createTextMessage("Book ticket for " + id);
+
+            tm.begin();
+
+            tm.getTransaction().enlistResource(xaSession.getXAResource());
+
+            //following two ops need to be atomic (XA)
+            tickets.remove(id);
+            publisher.send(message);
+
+            tm.commit();
+
+         } finally {
+            if (connection != null) connection.close();
+         }
+      } catch (Throwable e) { //don't do this at home :)
          throw new RuntimeException(e);
       }
    }
@@ -161,5 +156,4 @@ public class InfinispanTicketService implements TicketService {
    public TicketAllocation getTicketAllocation(String id) {
       return tickets.get(id);
    }
-
 }
