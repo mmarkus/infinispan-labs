@@ -97,36 +97,36 @@ public class InfinispanTicketService implements TicketService {
    public void clearAllocations() {
       tickets.clear();
    }
-   
+
    public void bookTicket(String id) {
+      XAConnection connection = null;
       try {
-         XAConnection connection = null;
-         try {
-            connection = cf.createXAConnection();
-            connection.start();
+         tm.begin();
 
-            XASession xaSession = connection.createXASession();
+         connection = cf.createXAConnection();
+         connection.start();
 
-            Session session = xaSession.getSession();
-            MessageProducer publisher = session.createProducer(queue);
+         XASession xaSession = connection.createXASession();
 
-            TextMessage message = session.createTextMessage("Book ticket for " + id);
+         MessageProducer publisher = xaSession.createProducer(queue);
 
-            tm.begin();
+         TextMessage message = xaSession.createTextMessage("Book ticket for " + id);
 
-            tm.getTransaction().enlistResource(xaSession.getXAResource());
 
-            //following two ops need to be atomic (XA)
-            tickets.remove(id);
-            publisher.send(message);
+         //following two ops need to be atomic (XA)
+         tickets.remove(id);
+         publisher.send(message);
 
-            tm.commit();
+         tm.commit();
 
-         } finally {
-            if (connection != null) connection.close();
-         }
-      } catch (Throwable e) { //don't do this at home :)
+      } catch (Throwable e) {
          throw new RuntimeException(e);
+      } finally {
+         try {
+            if (connection != null) connection.close();
+         } catch (JMSException e) {
+            e.printStackTrace();
+         }
       }
    }
 
