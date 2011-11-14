@@ -97,10 +97,9 @@ public class InfinispanTicketService implements TicketService {
 
             XASession xaSession = connection.createXASession();
 
-            Session session = xaSession.getSession();
-            MessageProducer publisher = session.createProducer(queue);
+            MessageProducer publisher = xaSession.createProducer(queue);
 
-            TextMessage message = session.createTextMessage("Book ticket for " + id);
+            TextMessage message = xaSession.createTextMessage("Book ticket for " + id);
 
             tm.begin();
 
